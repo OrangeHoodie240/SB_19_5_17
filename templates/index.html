@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+    Boggle
+{% endblock %}
+
+{% block header %}
+    Boggle
+{% endblock %}
+{% block score %}
+    <div id='score-box'>SCORE: <span id='score'>0</span></div>
+{% endblock %}
+
+{% block main %}
+    <form id='board-form'>
+        <div id='board'>
+        {% for row in session.get('game').get('board') %}
+            {% for letter in row %}
+                <input type='text' value='{{ letter }}' class='boggle-block' readonly />
+            {% endfor %}
+        {% endfor %}
+        </div>
+
+        <br />
+        <label for='guess'>
+            Guess: 
+        </label>
+        <input type='text' id='guess' name='guess' placeholder="Guess" />
+        <button id='button'>Submit</button>
+    </form>
+    
+    <span id='stats'></span>
+    
+    <div id='answers-div'>
+        <h2>Answers</h2>
+        <p id='answers'>
+            {% for answer in session.get('game').get('answers') %}
+                {{ answer }}
+            {% endfor %}
+        </p>
+    </div>
+
+    Time Left: <span id='timer'></span>&nbsp;&nbsp;&nbsp; &nbsp;<span id='message'></span>
+    
+
+{% endblock %}
