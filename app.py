@@ -23,11 +23,11 @@ def index():
 
 
 @app.route('/initialize-game', methods=['POST', 'GET'])
-"""
+def initialize_board():
+    """
     Create boggle board and answers list, adds to the session and redirects back to the home page
 
-"""
-def initialize_board():
+    """
     if(session.get('game', False) == False):
         board = boggle_game.make_board()
         answers = []

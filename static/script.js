@@ -1,97 +1,107 @@
 
-
-const boardForm = document.getElementById('board-form');
-const answerBox = document.getElementById('answers');
-const message = document.getElementById('message');
-const score = document.getElementById('score');
-const input = document.getElementById('guess');
-const button = document.querySelector('button');
-const timer = document.getElementById('timer');
-const stats = document.getElementById('stats');
-
-let time = 60;
-timer.innerText = time; 
-const interval = setInterval(async function(){
-    time -= 1; 
-    timer.innerText = time; 
-    if(time == 0){
-        gameover(); 
+class BoggleApp {
+    constructor(){
+        this.boardForm = document.getElementById('board-form');
+        this.answerBox = document.getElementById('answers');
+        this.message = document.getElementById('message');
+        this.score = document.getElementById('score');
+        this.input = document.getElementById('guess');
+        this.button = document.querySelector('button');
+        this.timer = document.getElementById('timer');
+        this.stats = document.getElementById('stats');
+        this.time = 0;
+        this.interval  = null; 
+        this.startTimer();
+        this.boardForm.addEventListener('submit', this.submissionHandler);
     }
-}, 1000);
-
-async function gameover() {
-    input.setAttribute('disabled', true);
-    button.setAttribute('disabled', true);
-    message.innerText = `GAME OVER! YOU ARE OUT OF TIME! FINAL SCORE: ${score.innerText}`;
-    clearInterval(interval);
-
-    const data = await updatePlayerStats(); 
-    reportStats(data);
-}
-
-async function updatePlayerStats(){
-    const body = JSON.stringify({'score': score.innerText});
-    method = 'POST'
-    headers = {'Content-Type': 'application/json'}; 
-    const data = await fetch('/gameover', {headers, method, body})
-        .then(resp => {
-            if(!resp.ok){
-                throw new Error(`Error! Status ${resp.status}`);
-            }
-            return resp.json();
-        })
-        .then(data => {
-            return data
-        })
-        .catch(err => console.error(err)); 
+    async startTimer(){
+        this.time = 60; 
+        this.timer.innerText = this.time;
+        this.interval = setInterval(this.timerIteration, 1000);
+    }
+    timerIteration = async ()=>{
+        this.time -= 1; 
+        this.timer.innerText = this.time;
+        if(this.time === 0){
+            this.gameover(); 
+        }
+    }
+    async gameover() {
+        this.input.setAttribute('disabled', true);
+        this.button.setAttribute('disabled', true);
+        this.message.innerText = `GAME OVER! YOU ARE OUT OF TIME! FINAL SCORE: ${this.score.innerText}`;
+        clearInterval(this.interval);
     
-    return data; 
-}
+        const data = await this.updatePlayerStats(); 
+        this.reportStats(data);
+    }
 
-function reportStats(data){
-    let msg = `Stats: ${data.new_highscore ? "NEW HIGHSCORE" : "Highscore"}: ${data.highscore} Games Played: ${data.games}`
-    stats.innerText = msg; 
-} 
+    async updatePlayerStats(){
+        const body = JSON.stringify({'score': this.score.innerText});
+        const method = 'POST'
+        const headers = {'Content-Type': 'application/json'}; 
+        const data = await fetch('/gameover', {headers, method, body})
+            .then(resp => {
+                if(!resp.ok){
+                    throw new Error(`Error! Status ${resp.status}`);
+                }
+                return resp.json();
+            })
+            .then(data => {
+                return data
+            })
+            .catch(err => console.error(err)); 
+        
+        return data; 
+    }
 
-boardForm.addEventListener('submit', async function (evt) {
-    evt.preventDefault();
+    reportStats(data){
+        let msg = `Stats: ${data.new_highscore ? "NEW HIGHSCORE" : "Highscore"}: ${data.highscore} Games Played: ${data.games}`
+        this.stats.innerText = msg; 
+    } 
 
-    body = JSON.stringify({ "guess": input.value });
-    method = "POST";
+    
+    submissionHandler = async (evt) => {
+        evt.preventDefault();
 
-    let resp = await fetch('/guess', { method, body, headers: { 'Content-Type': 'application/json' } })
-        .then(resp => {
-            if (!resp.ok) {
-                throw new Error(`Error! Status: ${resp.status}`);
+        const body = JSON.stringify({ "guess": this.input.value });
+        const method = "POST";
+        const resp = await fetch('/guess', { method, body, headers: { 'Content-Type': 'application/json' } })
+            .then(resp => {
+                if (!resp.ok) {
+                    throw new Error(`Error! Status: ${resp.status}`);
+                }
+                return resp.json();
+            })
+            .then(data => {
+                return data;
+            })
+            .catch(err => console.error(err));
+        this.processResult(resp)
+    }
+
+    processResult({ result }) {
+        if (result === 'ok') {
+            if (!this.answerBox.innerText.includes(this.input.value)) {
+                this.answerBox.innerText += ' ' + this.input.value;
+                this.message.innerText = `Great job! ${this.input.value} is worth ${this.input.value.length} points!`
+                this.addToScore(this.input);
             }
-            return resp.json();
-        })
-        .then(data => {
-            return data;
-        })
-        .catch(err => console.error(err));
-    processResult(resp, input)
-});
-
-function processResult({ result }, input) {
-    if (result === 'ok') {
-        if (!answerBox.innerText.includes(input.value)) {
-            answerBox.innerText += ' ' + input.value;
-            message.innerText = `Great job! ${input.value} is worth ${input.value.length} points!`
-            addToScore(input);
+            else {
+                this.message.innerText = `You've already answered with ${this.input.value}`
+            }
         }
         else {
-            message.innerText = `You've already answered with ${input.value}`
+            this.message.innerText = `Wrong. ${this.input.value} is not a valid answer.`
         }
+        this.input.value = '';
     }
-    else {
-        message.innerText = `Wrong. ${input.value} is not a valid answer.`
-    }
-    input.value = '';
 
+    addToScore() {
+        const total = parseInt(this.score.innerText) + parseInt(this.input.value.length);
+        this.score.innerText = total;
+    }
 }
 
-function addToScore() {
-    total = parseInt(score.innerText) + parseInt(input.value.length);
-    score.innerText = total;
-}
+const app = new BoggleApp(); 
+
